@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Mail {
+  id              String   @id @default(uuid())
+  idUser          String
+  mailDestination String
+  mailContent     String
+  mailType        MailType
+  createdAt       DateTime @default(now())
+}
+
+enum MailType {
+  orderConfirmation
+  paymentConfirmation
+}
