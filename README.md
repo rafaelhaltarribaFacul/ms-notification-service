@@ -1,98 +1,92 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ms-notification-service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Microsserviço de notificação em Nest.js + Prisma que consome eventos RabbitMQ, persiste notificações e expõe endpoint HTTP.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Pré-requisitos
 
-## Description
+- **Node.js** v16 ou superior  
+- **npm**  
+- **Docker** & **Docker Compose**  
+- (Opcional) **PgAdmin**  
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## ⚙️ Variáveis de ambiente
 
-## Project setup
+Na raiz do projeto, crie um arquivo `.env` com:
 
-```bash
-$ npm install
-```
+# conexão Postgres
+DATABASE_URL=postgresql://postgres:root@127.0.0.1:5432/notification?schema=public
 
-## Compile and run the project
+# conexão RabbitMQ
+RABBITMQ_URL=amqp://admin:123456@127.0.0.1:5672
 
-```bash
-# development
-$ npm run start
+## 🐳 Containers necessários
 
-# watch mode
-$ npm run start:dev
+# PostgreSQL + PgAdmin (opcional)
+docker compose -f docker/docker-postgres.yml up -d
 
-# production mode
-$ npm run start:prod
-```
+Banco em localhost:5432, PgAdmin em localhost:15432 (usuário postgres / root).
 
-## Run tests
+# RabbitMQ
+docker compose -f docker/docker-rabbit.yml up -d
 
-```bash
-# unit tests
-$ npm run test
+Broker em localhost:5672, console de gestão em localhost:15672 (usuário admin / 123456).
 
-# e2e tests
-$ npm run test:e2e
+## 💾 Instalação e setup do Prisma
 
-# test coverage
-$ npm run test:cov
-```
+npm install
+npx prisma db push      # sincroniza schema.prisma com o banco
+npx prisma generate     # gera o Prisma Client
 
-## Deployment
+## 🚀 Rodando em modo desenvolvimento
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+npm run start:dev
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+O serviço ficará disponível em http://localhost:3001.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## 🔗 Endpoints disponíveis
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+# GET /
+Retorna status do serviço:
+curl http://localhost:3001/
+# running server
 
-## Resources
+# GET /mail/get
+Busca notificações persistidas por usuário:
+URL: http://localhost:3001/mail/get?idUser=10
+Método: GET
+curl "http://localhost:3001/mail/get?idUser=10"
 
-Check out a few resources that may come in handy when working with NestJS:
+Resposta de exemplo:
+[
+  {
+    "id": "…",
+    "idUser": "10",
+    "mailDestination": "user@teste.com.br",
+    "mailContent": "Número do pedido: 123\nValor do pedido: R$ 456.78",
+    "mailType": "orderConfirmation",
+    "createdAt": "2025-05-13T…Z"
+  },
+  {
+    "id": "…",
+    "idUser": "10",
+    "mailDestination": "user@teste.com.br",
+    "mailContent": "Número do pedido: 123\nValor do pedido: R$ 456.78",
+    "mailType": "paymentConfirmation",
+    "createdAt": "2025-05-13T…Z"
+  }
+]
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 📝 Observações
 
-## Support
+- Consome os eventos register e confirmation da fila notification.
+- Persiste cada notificação no Postgres e faz console.log() simulando envio de e-mail.
+- Teste o fluxo completo disparando /credit-card/send no ms-payment-service e depois /mail/get aqui.
+- Para alterar usuário/senha, edite os arquivos Docker Compose e .env.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 💻 Commit e GitHub
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+git add README.md
+git commit -m "Adiciona README com instruções de execução do serviço de notificação"
+git remote add origin https://github.com/SEU_USUARIO/ms-notification-service.git
+git branch -M main
+git push -u origin main
